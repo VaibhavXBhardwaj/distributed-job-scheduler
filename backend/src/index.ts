@@ -12,6 +12,7 @@ import authRoutes from './routes/authRoutes';
 import projectRoutes from './routes/projectRoutes';
 import queueRoutes from './routes/queueRoutes';
 import jobRoutes from './routes/jobRoutes';
+import workerRoutes from './routes/workerRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -44,6 +45,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/queues', queueRoutes);
 app.use('/api/jobs', jobRoutes);
+app.use('/api/workers', workerRoutes);
 
 app.listen(PORT, () => {
   console.log(`[server] running on http://localhost:${PORT}`);
