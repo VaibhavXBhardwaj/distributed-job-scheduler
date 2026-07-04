@@ -1,9 +1,11 @@
 import { ReactNode } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { LayoutGrid, ListTodo, Cpu, LogOut } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 
 export default function Layout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
+  const location = useLocation();
 
   return (
     <div className="min-h-screen flex">
@@ -16,9 +18,9 @@ export default function Layout({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-0.5">
-          <NavItem icon={<LayoutGrid className="h-4 w-4" />} label="Queues" active />
-          <NavItem icon={<ListTodo className="h-4 w-4" />} label="Jobs" />
-          <NavItem icon={<Cpu className="h-4 w-4" />} label="Workers" />
+          <NavItem to="/" icon={<LayoutGrid className="h-4 w-4" />} label="Queues" active={location.pathname === '/'} />
+          <NavItem to="/jobs" icon={<ListTodo className="h-4 w-4" />} label="Jobs" active={location.pathname === '/jobs'} />
+          <NavItem to="/workers" icon={<Cpu className="h-4 w-4" />} label="Workers" active={location.pathname === '/workers'} />
         </nav>
 
         <div className="px-3 py-4 border-t border-[var(--color-border)]">
@@ -42,10 +44,11 @@ export default function Layout({ children }: { children: ReactNode }) {
   );
 }
 
-function NavItem({ icon, label, active }: { icon: ReactNode; label: string; active?: boolean }) {
+function NavItem({ to, icon, label, active }: { to: string; icon: ReactNode; label: string; active?: boolean }) {
   return (
-    <button
-      className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition ${
+    <Link
+      to={to}
+      className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition ${
         active
           ? 'bg-[var(--color-ink)] text-white'
           : 'text-[var(--color-muted)] hover:bg-[var(--color-canvas)] hover:text-[var(--color-ink)]'
@@ -53,6 +56,6 @@ function NavItem({ icon, label, active }: { icon: ReactNode; label: string; acti
     >
       {icon}
       {label}
-    </button>
+    </Link>
   );
 }

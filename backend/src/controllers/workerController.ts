@@ -115,3 +115,16 @@ export async function claimJob(req: AuthRequest, res: Response) {
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
+
+export async function listWorkers(req: AuthRequest, res: Response) {
+  try {
+    const workers = await prisma.worker.findMany({
+      orderBy: { lastHeartbeatAt: 'desc' },
+    });
+
+    return res.json({ workers });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}

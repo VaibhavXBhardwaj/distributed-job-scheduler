@@ -3,6 +3,8 @@ import { AuthProvider, useAuth } from './lib/auth';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import Jobs from './pages/Jobs';
+import Workers from './pages/Workers';
 import Layout from './components/Layout';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -20,12 +22,26 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route
-            path="/*"
+            path="/"
             element={
               <ProtectedRoute>
-                <Layout>
-                  <Dashboard />
-                </Layout>
+                <Layout><Dashboard /></Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/jobs"
+            element={
+              <ProtectedRoute>
+                <Layout><Jobs /></Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/workers"
+            element={
+              <ProtectedRoute>
+                <Layout><Workers /></Layout>
               </ProtectedRoute>
             }
           />
