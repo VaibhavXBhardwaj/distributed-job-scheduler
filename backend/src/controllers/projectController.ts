@@ -47,7 +47,7 @@ export async function listProjects(req: AuthRequest, res: Response) {
 
 export async function getProject(req: AuthRequest, res: Response) {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const project = await prisma.project.findFirst({
       where: { id, organizationId: req.user!.organizationId },
@@ -67,7 +67,7 @@ export async function getProject(req: AuthRequest, res: Response) {
 
 export async function deleteProject(req: AuthRequest, res: Response) {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const project = await prisma.project.findFirst({
       where: { id, organizationId: req.user!.organizationId },

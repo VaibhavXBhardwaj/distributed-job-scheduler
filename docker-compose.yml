@@ -29,5 +29,43 @@ services:
       timeout: 5s
       retries: 5
 
+  backend:
+    build: ./backend
+    container_name: djs-backend
+    restart: always
+    ports:
+      - "4100:4100"
+    environment:
+      DATABASE_URL: "postgresql://djs_user:djs_pass@postgres:5432/djs_db"
+      REDIS_URL: "redis://redis:6379"
+      JWT_SECRET: "djs_super_secret_change_this_later"
+      JWT_EXPIRES_IN: "7d"
+      PORT: 4100
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build: ./worker
+    container_name: djs-worker
+    restart: always
+    environment:
+      DATABASE_URL: "postgresql://djs_user:djs_pass@postgres:5432/djs_db"
+      REDIS_URL: "redis://redis:6379"
+      WORKER_NAME: "worker-docker-1"
+      POLL_INTERVAL_MS: 2000
+      HEARTBEAT_INTERVAL_MS: 10000
+      GROQ_API_KEY: "${GROQ_API_KEY}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_started
+
 volumes:
   pgdata:

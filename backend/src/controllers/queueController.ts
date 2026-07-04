@@ -76,7 +76,7 @@ export async function listQueues(req: AuthRequest, res: Response) {
 
 export async function getQueue(req: AuthRequest, res: Response) {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const queue = await prisma.queue.findFirst({
       where: { id, project: { organizationId: req.user!.organizationId } },
@@ -90,11 +90,11 @@ export async function getQueue(req: AuthRequest, res: Response) {
     const statusCounts = await prisma.job.groupBy({
       by: ['status'],
       where: { queueId: id },
-      _count: { status: true },
+      _count: { _all: true },
     });
 
-    const stats = statusCounts.reduce((acc, row) => {
-      acc[row.status] = row._count.status;
+    const stats = statusCounts.reduce((acc: Record<string, number>, row: any) => {
+      acc[row.status] = row._count._all;
       return acc;
     }, {} as Record<string, number>);
 
@@ -107,7 +107,7 @@ export async function getQueue(req: AuthRequest, res: Response) {
 
 export async function pauseResumeQueue(req: AuthRequest, res: Response) {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { action } = req.body as { action: 'pause' | 'resume' };
 
     if (action !== 'pause' && action !== 'resume') {

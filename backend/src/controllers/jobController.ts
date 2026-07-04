@@ -108,7 +108,7 @@ export async function listJobs(req: AuthRequest, res: Response) {
 
 export async function getJob(req: AuthRequest, res: Response) {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const job = await prisma.job.findFirst({
       where: { id, queue: { project: { organizationId: req.user!.organizationId } } },
@@ -133,7 +133,7 @@ export async function getJob(req: AuthRequest, res: Response) {
 
 export async function cancelJob(req: AuthRequest, res: Response) {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const job = await prisma.job.findFirst({
       where: { id, queue: { project: { organizationId: req.user!.organizationId } } },

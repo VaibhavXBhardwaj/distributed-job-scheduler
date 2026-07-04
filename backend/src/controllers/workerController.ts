@@ -31,7 +31,7 @@ export async function registerWorker(req: AuthRequest, res: Response) {
 
 export async function heartbeat(req: AuthRequest, res: Response) {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { cpuLoad, memoryMb } = req.body as { cpuLoad?: number; memoryMb?: number };
 
     const worker = await prisma.worker.findUnique({ where: { id } });
