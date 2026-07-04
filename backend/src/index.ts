@@ -10,6 +10,7 @@ import prisma from './lib/prisma';
 import redis from './lib/redis';
 import authRoutes from './routes/authRoutes';
 import projectRoutes from './routes/projectRoutes';
+import queueRoutes from './routes/queueRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -40,6 +41,7 @@ app.get('/health', async (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
+app.use('/api/queues', queueRoutes);
 
 app.listen(PORT, () => {
   console.log(`[server] running on http://localhost:${PORT}`);
