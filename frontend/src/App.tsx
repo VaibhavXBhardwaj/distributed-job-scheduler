@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Jobs from './pages/Jobs';
+import JobDetail from './pages/JobDetail';
 import Workers from './pages/Workers';
 import Layout from './components/Layout';
 
@@ -34,6 +35,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Layout><Jobs /></Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/jobs/:id"
+            element={
+              <ProtectedRoute>
+                <Layout><JobDetail /></Layout>
               </ProtectedRoute>
             }
           />

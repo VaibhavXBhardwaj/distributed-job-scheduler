@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { RefreshCw } from 'lucide-react';
 import api from '../lib/api';
@@ -27,6 +28,7 @@ const statusStyles: Record<string, string> = {
 export default function Jobs() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadJobs();
@@ -87,7 +89,8 @@ export default function Jobs() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.2, delay: i * 0.02 }}
-                  className="border-b border-[var(--color-border)] last:border-0 hover:bg-[var(--color-canvas)] transition"
+                  onClick={() => navigate(`/jobs/${job.id}`)}
+                  className="border-b border-[var(--color-border)] last:border-0 hover:bg-[var(--color-canvas)] transition cursor-pointer"
                 >
                   <td className="px-5 py-3.5 font-medium">{job.name}</td>
                   <td className="px-5 py-3.5 text-[var(--color-muted)] font-[var(--font-mono)] text-xs">{job.type}</td>

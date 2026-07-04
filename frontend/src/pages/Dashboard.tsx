@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Pause, Play, ChevronRight } from 'lucide-react';
 import api from '../lib/api';
+import NewQueueModal from '../components/NewQueueModal';
 
 interface Queue {
   id: string;
@@ -12,19 +13,30 @@ interface Queue {
   projectId: string;
 }
 
+interface Project {
+  id: string;
+  name: string;
+}
+
 export default function Dashboard() {
   const [queues, setQueues] = useState<Queue[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
-    loadQueues();
+    loadData();
   }, []);
 
-  async function loadQueues() {
+  async function loadData() {
     setLoading(true);
     try {
-      const res = await api.get('/queues');
-      setQueues(res.data.queues);
+      const [queuesRes, projectsRes] = await Promise.all([
+        api.get('/queues'),
+        api.get('/projects'),
+      ]);
+      setQueues(queuesRes.data.queues);
+      setProjects(projectsRes.data.projects);
     } catch (err) {
       console.error(err);
     } finally {
@@ -34,8 +46,10 @@ export default function Dashboard() {
 
   async function togglePause(id: string, currentlyPaused: boolean) {
     await api.patch(`/queues/${id}/status`, { action: currentlyPaused ? 'resume' : 'pause' });
-    loadQueues();
+    loadData();
   }
+
+  const defaultProjectId = projects[0]?.id;
 
   return (
     <div className="p-8 max-w-5xl">
@@ -46,7 +60,11 @@ export default function Dashboard() {
             {queues.length} queue{queues.length !== 1 ? 's' : ''} across your organization
           </p>
         </div>
-        <button className="flex items-center gap-2 rounded-lg bg-[var(--color-ink)] text-white px-4 py-2.5 text-sm font-medium hover:bg-black transition">
+        <button
+          onClick={() => setShowModal(true)}
+          disabled={!defaultProjectId}
+          className="flex items-center gap-2 rounded-lg bg-[var(--color-ink)] text-white px-4 py-2.5 text-sm font-medium hover:bg-black transition disabled:opacity-50"
+        >
           <Plus className="h-4 w-4" />
           New queue
         </button>
@@ -91,6 +109,14 @@ export default function Dashboard() {
             </motion.div>
           ))}
         </div>
+      )}
+
+      {showModal && defaultProjectId && (
+        <NewQueueModal
+          projectId={defaultProjectId}
+          onClose={() => setShowModal(false)}
+          onCreated={loadData}
+        />
       )}
     </div>
   );
