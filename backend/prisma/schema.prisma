@@ -1,0 +1,256 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============ ENUMS ============
+
+enum Role {
+  ADMIN
+  ANALYST
+  VIEWER
+}
+
+enum JobStatus {
+  QUEUED
+  SCHEDULED
+  CLAIMED
+  RUNNING
+  COMPLETED
+  FAILED
+  DEAD_LETTER
+  CANCELLED
+}
+
+enum JobType {
+  IMMEDIATE
+  DELAYED
+  SCHEDULED
+  RECURRING
+  BATCH
+}
+
+enum BackoffStrategy {
+  FIXED
+  LINEAR
+  EXPONENTIAL
+}
+
+enum WorkerStatus {
+  ONLINE
+  OFFLINE
+  BUSY
+}
+
+// ============ MODELS ============
+
+model Organization {
+  id        String    @id @default(uuid())
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  users    User[]
+  projects Project[]
+
+  @@map("organizations")
+}
+
+model User {
+  id             String   @id @default(uuid())
+  email          String   @unique
+  password       String
+  name           String
+  role           Role     @default(VIEWER)
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  projects     Project[]
+
+  @@map("users")
+}
+
+model Project {
+  id             String   @id @default(uuid())
+  name           String
+  description    String?
+  organizationId String
+  createdById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  createdBy    User         @relation(fields: [createdById], references: [id])
+  queues       Queue[]
+
+  @@map("projects")
+}
+
+model Queue {
+  id               String   @id @default(uuid())
+  name             String
+  projectId        String
+  concurrencyLimit Int      @default(5)
+  isPaused         Boolean  @default(false)
+  priority         Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  project      Project       @relation(fields: [projectId], references: [id])
+  jobs         Job[]
+  retryPolicy  RetryPolicy?
+
+  @@map("queues")
+}
+
+model RetryPolicy {
+  id              String          @id @default(uuid())
+  queueId         String          @unique
+  maxRetries      Int             @default(3)
+  backoffStrategy BackoffStrategy @default(EXPONENTIAL)
+  baseDelayMs     Int             @default(1000)
+  maxDelayMs      Int             @default(60000)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  queue Queue @relation(fields: [queueId], references: [id])
+
+  @@map("retry_policies")
+}
+
+model Job {
+  id             String    @id @default(uuid())
+  queueId        String
+  name           String
+  type           JobType   @default(IMMEDIATE)
+  status         JobStatus @default(QUEUED)
+  payload        Json
+  priority       Int       @default(0)
+  attempts       Int       @default(0)
+  maxAttempts    Int       @default(3)
+  scheduledAt    DateTime?
+  cronExpression String?
+  claimedByWorkerId String?
+  claimedAt      DateTime?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  failedAt       DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  queue         Queue           @relation(fields: [queueId], references: [id])
+  claimedByWorker Worker?       @relation(fields: [claimedByWorkerId], references: [id])
+  executions    JobExecution[]
+  logs          JobLog[]
+  scheduledJob  ScheduledJob?
+  dlqEntry      DeadLetterJob?
+
+  // Job dependencies (DAG bonus feature)
+  dependsOn    JobDependency[] @relation("DependentJob")
+  dependents   JobDependency[] @relation("PrerequisiteJob")
+
+  @@index([status])
+  @@index([queueId, status])
+  @@map("jobs")
+}
+
+model JobDependency {
+  id              String @id @default(uuid())
+  dependentJobId  String
+  prerequisiteJobId String
+
+  dependentJob    Job @relation("DependentJob", fields: [dependentJobId], references: [id])
+  prerequisiteJob Job @relation("PrerequisiteJob", fields: [prerequisiteJobId], references: [id])
+
+  @@unique([dependentJobId, prerequisiteJobId])
+  @@map("job_dependencies")
+}
+
+model JobExecution {
+  id          String    @id @default(uuid())
+  jobId       String
+  workerId    String?
+  attemptNumber Int
+  status      JobStatus
+  startedAt   DateTime  @default(now())
+  finishedAt  DateTime?
+  errorMessage String?
+  errorStack  String?
+
+  job    Job     @relation(fields: [jobId], references: [id])
+  worker Worker? @relation(fields: [workerId], references: [id])
+
+  @@map("job_executions")
+}
+
+model ScheduledJob {
+  id             String   @id @default(uuid())
+  jobId          String   @unique
+  cronExpression String
+  nextRunAt      DateTime
+  lastRunAt      DateTime?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  job Job @relation(fields: [jobId], references: [id])
+
+  @@map("scheduled_jobs")
+}
+
+model DeadLetterJob {
+  id           String   @id @default(uuid())
+  jobId        String   @unique
+  reason       String
+  aiSummary    String?
+  movedAt      DateTime @default(now())
+
+  job Job @relation(fields: [jobId], references: [id])
+
+  @@map("dead_letter_jobs")
+}
+
+model Worker {
+  id           String       @id @default(uuid())
+  name         String
+  status       WorkerStatus @default(OFFLINE)
+  lastHeartbeatAt DateTime?
+  createdAt    DateTime     @default(now())
+
+  heartbeats WorkerHeartbeat[]
+  claimedJobs Job[]
+  executions JobExecution[]
+
+  @@map("workers")
+}
+
+model WorkerHeartbeat {
+  id        String   @id @default(uuid())
+  workerId  String
+  timestamp DateTime @default(now())
+  cpuLoad   Float?
+  memoryMb  Float?
+
+  worker Worker @relation(fields: [workerId], references: [id])
+
+  @@index([workerId, timestamp])
+  @@map("worker_heartbeats")
+}
+
+model JobLog {
+  id        String   @id @default(uuid())
+  jobId     String
+  level     String   @default("info")
+  message   String
+  timestamp DateTime @default(now())
+
+  job Job @relation(fields: [jobId], references: [id])
+
+  @@index([jobId])
+  @@map("job_logs")
+}
