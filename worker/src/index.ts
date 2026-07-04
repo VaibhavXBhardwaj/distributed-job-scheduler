@@ -4,6 +4,7 @@ dotenv.config();
 import prisma from './lib/prisma';
 import redis from './lib/redis';
 import { executeJob, calculateBackoffMs } from './services/executor';
+import { generateFailureSummary } from './services/aiSummary';
 
 const WORKER_NAME = process.env.WORKER_NAME || `worker-${Date.now()}`;
 const POLL_INTERVAL_MS = Number(process.env.POLL_INTERVAL_MS) || 2000;
@@ -130,10 +131,18 @@ async function processJob(job: any) {
       where: { id: job.id },
       data: { status: 'DEAD_LETTER', failedAt: new Date() },
     });
+    const aiSummary = await generateFailureSummary(
+      job.name,
+      result.errorMessage || 'Unknown error',
+      result.errorStack,
+      newAttempts
+    );
+
     await prisma.deadLetterJob.create({
       data: {
         jobId: job.id,
         reason: result.errorMessage || 'Max retries exceeded',
+        aiSummary: aiSummary || undefined,
       },
     });
     await prisma.jobLog.create({
