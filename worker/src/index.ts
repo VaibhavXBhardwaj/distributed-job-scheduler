@@ -127,10 +127,6 @@ async function processJob(job: any) {
   const maxAttempts = job.maxAttempts;
 
   if (newAttempts >= maxAttempts) {
-    await prisma.job.update({
-      where: { id: job.id },
-      data: { status: 'DEAD_LETTER', failedAt: new Date() },
-    });
     const aiSummary = await generateFailureSummary(
       job.name,
       result.errorMessage || 'Unknown error',
@@ -138,13 +134,19 @@ async function processJob(job: any) {
       newAttempts
     );
 
-    await prisma.deadLetterJob.create({
-      data: {
-        jobId: job.id,
-        reason: result.errorMessage || 'Max retries exceeded',
-        aiSummary: aiSummary || undefined,
-      },
-    });
+    await prisma.$transaction([
+      prisma.job.update({
+        where: { id: job.id },
+        data: { status: 'DEAD_LETTER', failedAt: new Date() },
+      }),
+      prisma.deadLetterJob.create({
+        data: {
+          jobId: job.id,
+          reason: result.errorMessage || 'Max retries exceeded',
+          aiSummary: aiSummary || undefined,
+        },
+      }),
+    ]);
     await prisma.jobLog.create({
       data: { jobId: job.id, level: 'error', message: `Job moved to DLQ after ${newAttempts} attempts` },
     });

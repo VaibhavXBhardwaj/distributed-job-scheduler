@@ -9,10 +9,15 @@ export interface ExecutionResult {
 export async function executeJob(jobName: string, payload: any): Promise<ExecutionResult> {
   console.log(`[worker] executing job "${jobName}" with payload:`, payload);
 
-  await new Promise((resolve) => setTimeout(resolve, 1000 + Math.random() * 1500));
+  await new Promise((resolve) => setTimeout(resolve, 300 + Math.random() * 500));
 
-  // Simulate ~20% random failure rate to demonstrate retry/DLQ logic
-  const shouldFail = Math.random() < 0.2;
+  // Allow deterministic failure/success for automated tests via payload flags
+  let shouldFail: boolean;
+  if (payload && typeof payload.forceFail === 'boolean') {
+    shouldFail = payload.forceFail;
+  } else {
+    shouldFail = Math.random() < 0.2;
+  }
 
   if (shouldFail) {
     return {
