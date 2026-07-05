@@ -41,6 +41,14 @@ export async function register(req: Request, res: Response) {
       },
     });
 
+    await prisma.project.create({
+      data: {
+        name: 'Default Project',
+        organizationId: organization.id,
+        createdById: user.id,
+      },
+    });
+
     const token = signToken({
       userId: user.id,
       organizationId: user.organizationId,
