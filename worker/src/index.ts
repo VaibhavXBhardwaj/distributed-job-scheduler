@@ -7,6 +7,8 @@ import { executeJob, calculateBackoffMs } from './services/executor';
 import { generateFailureSummary } from './services/aiSummary';
 
 const WORKER_NAME = process.env.WORKER_NAME || `worker-${Date.now()}`;
+const SHARD_INDEX = Number(process.env.SHARD_INDEX) || 0;
+const SHARD_COUNT = Number(process.env.SHARD_COUNT) || 1;
 const POLL_INTERVAL_MS = Number(process.env.POLL_INTERVAL_MS) || 2000;
 const HEARTBEAT_INTERVAL_MS = Number(process.env.HEARTBEAT_INTERVAL_MS) || 10000;
 
@@ -50,6 +52,10 @@ async function claimNextJob() {
       SELECT j.id FROM jobs j
       JOIN queues q ON j."queueId" = q.id
       WHERE j.status IN ('QUEUED', 'SCHEDULED')
+        AND (
+          j."shardKey" IS NULL
+          OR (abs(hashtext(j."shardKey")) % ${SHARD_COUNT}) = ${SHARD_INDEX}
+        )
         AND q."isPaused" = false
         AND (j."scheduledAt" IS NULL OR j."scheduledAt" <= NOW())
         AND NOT EXISTS (
@@ -120,6 +126,7 @@ async function processJob(job: any) {
       data: { jobId: job.id, level: 'info', message: 'Job completed successfully' },
     });
     console.log(`[worker] job ${job.id} completed`);
+    await redis.publish("job:completed", job.id);
     return;
   }
 
@@ -215,6 +222,13 @@ async function start() {
   await registerWorker();
   setInterval(sendHeartbeat, HEARTBEAT_INTERVAL_MS);
   setInterval(pollLoop, POLL_INTERVAL_MS);
+
+  const subscriber = redis.duplicate();
+  await subscriber.subscribe("job:completed");
+  subscriber.on("message", () => {
+    console.log("[worker] event-driven trigger: a job completed, checking for unblocked work");
+    pollLoop();
+  });
   console.log(`[worker] polling every ${POLL_INTERVAL_MS}ms, heartbeat every ${HEARTBEAT_INTERVAL_MS}ms`);
 }
 

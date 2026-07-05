@@ -97,6 +97,7 @@ model Queue {
   name             String
   projectId        String
   concurrencyLimit Int      @default(5)
+  shardCount       Int      @default(1)
   isPaused         Boolean  @default(false)
   priority         Int      @default(0)
   createdAt        DateTime @default(now())
@@ -132,6 +133,7 @@ model Job {
   status         JobStatus @default(QUEUED)
   payload        Json
   priority       Int       @default(0)
+  shardKey       String?
   attempts       Int       @default(0)
   maxAttempts    Int       @default(3)
   scheduledAt    DateTime?

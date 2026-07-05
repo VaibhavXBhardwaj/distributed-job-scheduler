@@ -13,6 +13,7 @@ const createJobSchema = z.object({
   scheduledAt: z.string().datetime().optional(),
   cronExpression: z.string().optional(),
   dependsOnJobIds: z.array(z.string().uuid()).optional(),
+  shardKey: z.string().optional(),
 });
 
 export async function createJob(req: AuthRequest, res: Response) {
@@ -52,6 +53,7 @@ export async function createJob(req: AuthRequest, res: Response) {
         maxAttempts: data.maxAttempts ?? 3,
         scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : undefined,
         cronExpression: data.cronExpression,
+        shardKey: data.shardKey,
       },
     });
 
