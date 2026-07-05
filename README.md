@@ -78,6 +78,9 @@ Full diagrams with Mermaid source: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md
 | **Infra** | Docker · Docker Compose |
 
 ## Quick Start
+( For Quick Demo Use:
+Username: vaibhav@test.com
+password: password123 )
 
 Requires [Docker](https://www.docker.com/products/docker-desktop/) and a free [Groq API key](https://console.groq.com/keys).
 
