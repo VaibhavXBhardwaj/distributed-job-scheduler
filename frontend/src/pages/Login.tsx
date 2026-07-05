@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
+import AuthLayout from '../components/AuthLayout';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -27,14 +28,14 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6">
+    <AuthLayout>
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: 'easeOut' }}
         className="w-full max-w-sm"
       >
-        <div className="mb-8 flex items-center gap-2.5">
+        <div className="mb-8 flex items-center gap-2.5 lg:hidden">
           <div className="h-8 w-8 rounded-md bg-[var(--color-ink)] flex items-center justify-center">
             <div className="h-3 w-3 rounded-sm bg-[var(--color-accent-soft)]" />
           </div>
@@ -95,6 +96,6 @@ export default function Login() {
           </Link>
         </p>
       </motion.div>
-    </div>
+    </AuthLayout>
   );
 }
